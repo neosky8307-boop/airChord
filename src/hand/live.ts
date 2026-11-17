@@ -10,4 +10,6 @@ export const live: {
   fingers: Partial<Record<Handedness, { ext: FingerVector; ratios: FingerVector }>>
   /** 이번 프레임의 순간 매칭 결과 (안정화 이전) */
   match: Match | null
-} = { fingers: {}, match: null }
+  /** 마지막 코드 재생까지의 지연 (손모양 시작 프레임 → 소리 출력, ms) */
+  latencyMs: number | null
+} = { fingers: {}, match: null, latencyMs: null }

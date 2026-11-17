@@ -21,6 +21,7 @@ export function ChordList() {
 export function ChordStatus() {
   const confirmed = useAppStore((s) => s.confirmedChord)
   const instant = useRef<HTMLSpanElement>(null)
+  const latency = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     let raf = 0
@@ -28,6 +29,8 @@ export function ChordStatus() {
       const m = live.match
       if (instant.current)
         instant.current.textContent = m ? `${m.id} (신뢰도 ${(m.confidence * 100).toFixed(0)}%)` : '-'
+      if (latency.current)
+        latency.current.textContent = live.latencyMs == null ? '-' : `${live.latencyMs.toFixed(0)}ms`
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
@@ -38,6 +41,7 @@ export function ChordStatus() {
     <>
       <span>확정 코드: <b>{confirmed ?? '-'}</b></span>
       <span>순간 인식: <span ref={instant}>-</span></span>
+      <span>지연: <span ref={latency}>-</span></span>
     </>
   )
 }

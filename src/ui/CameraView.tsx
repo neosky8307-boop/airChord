@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import { createHandTracker, ModelLoadError, type HandTracker } from '../hand/tracker'
 import { HAND_CONNECTIONS } from '../hand/connections'
 import type { HandFrame } from '../hand/types'
+import { ChordTrigger } from '../audio/trigger'
+import { outputLatencyMs, playChord, stopAudio } from '../audio/engine'
 import { matchChord, Stabilizer } from '../chords/matching'
 import { fingerExtensions, fingerRatios } from '../hand/fingers'
 import { live } from '../hand/live'
@@ -83,6 +85,9 @@ export function CameraView({ running }: { running: boolean }) {
       setStatus('running')
 
       const stabilizer = new Stabilizer(useAppStore.getState().stableFrames)
+      const trigger = new ChordTrigger()
+      let candidateId: string | null = null
+      let candidateSince = 0
       let lastVideoTime = -1
       let frames = 0
       let windowStart = performance.now()
@@ -92,7 +97,8 @@ export function CameraView({ running }: { running: boolean }) {
         if (cancelled) return
         if (video.currentTime !== lastVideoTime) {
           lastVideoTime = video.currentTime
-          const frame = tracker!.detect(video, performance.now())
+          const frameTime = performance.now()
+          const frame = tracker!.detect(video, frameTime)
           draw(ctx, frame, canvas.width, canvas.height)
           const aspect = canvas.width / canvas.height
           live.fingers = {}
@@ -106,8 +112,20 @@ export function CameraView({ running }: { running: boolean }) {
           stabilizer.frames = st.stableFrames
           const chordFingers = live.fingers[st.chordHand]
           live.match = chordFingers ? matchChord(chordFingers.ext, st.templates, st.threshold) : null
-          const { confirmed, changed } = stabilizer.push(live.match?.id ?? null)
-          if (changed) st.setConfirmedChord(confirmed)
+          const id = live.match?.id ?? null
+          if (id !== candidateId) {
+            candidateId = id
+            candidateSince = frameTime
+          }
+          const { confirmed, changed } = stabilizer.push(id)
+          if (changed) {
+            st.setConfirmedChord(confirmed)
+            const toPlay = trigger.next(confirmed)
+            if (toPlay) {
+              playChord(toPlay)
+              live.latencyMs = performance.now() - candidateSince + outputLatencyMs()
+            }
+          }
           handCount = frame.hands.length
           frames++
         }
@@ -130,6 +148,7 @@ export function CameraView({ running }: { running: boolean }) {
       if (videoRef.current) videoRef.current.srcObject = null
       live.fingers = {}
       live.match = null
+      stopAudio()
       useAppStore.getState().setConfirmedChord(null)
       useAppStore.getState().setStatus('idle')
     }

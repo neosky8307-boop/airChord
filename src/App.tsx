@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { startAudio } from './audio/engine'
 import { CameraView } from './ui/CameraView'
 import { FingerBars } from './ui/FingerBars'
 import { ChordList, ChordStatus } from './ui/ChordGuide'
@@ -8,11 +9,17 @@ export default function App() {
   const [running, setRunning] = useState(false)
   const { status, error, fps, handCount } = useAppStore()
 
+  // Tone.start()는 반드시 사용자 클릭 안에서 호출해야 한다.
+  const onToggle = async () => {
+    if (!running) await startAudio()
+    setRunning((r) => !r)
+  }
+
   return (
     <div className="app">
       <header>
         <h1>Air Chord</h1>
-        <button onClick={() => setRunning((r) => !r)}>{running ? '정지' : '시작'}</button>
+        <button onClick={onToggle}>{running ? '정지' : '시작'}</button>
       </header>
       <main>
         <ChordList />

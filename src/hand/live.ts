@@ -1,5 +1,6 @@
 import type { FingerVector } from './fingers'
 import type { TemplateRecorder } from '../chords/calibration'
+import type { StrumDirection } from '../chords/strum'
 import type { Match } from '../chords/matching'
 import type { Handedness } from './types'
 
@@ -15,4 +16,7 @@ export const live: {
   latencyMs: number | null
   /** 진행 중인 캘리브레이션 녹화 */
   recorder: TemplateRecorder | null
-} = { fingers: {}, match: null, latencyMs: null, recorder: null }
+  /** 스트럼 손목 속도(부호 포함, 손길이/초). 튜닝용 표시. */
+  strumSpeed: number
+  lastStrum: { direction: StrumDirection; at: number } | null
+} = { fingers: {}, match: null, latencyMs: null, recorder: null, strumSpeed: 0, lastStrum: null }

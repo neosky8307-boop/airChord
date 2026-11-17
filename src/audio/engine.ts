@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import { CHORDS } from '../chords/definitions'
-import type { Instrument } from './instrument'
+import type { Instrument, PlayOptions } from './instrument'
 import { SynthInstrument } from './synthInstrument'
 
 let instrument: Instrument | null = null
@@ -20,9 +20,9 @@ export function setInstrument(next: Instrument) {
   instrument = next
 }
 
-export function playChord(id: string): void {
+export function playChord(id: string, opts?: PlayOptions): void {
   const chord = CHORDS.find((c) => c.id === id)
-  if (chord) instrument?.playChord(chord.notes)
+  if (chord) instrument?.playChord(chord.notes, opts)
 }
 
 export function stopAudio(): void {

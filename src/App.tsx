@@ -8,7 +8,7 @@ import { useAppStore } from './store/useAppStore'
 
 export default function App() {
   const [running, setRunning] = useState(false)
-  const { status, error, fps, handCount } = useAppStore()
+  const { status, error, fps, handCount, mode, setMode } = useAppStore()
 
   // Tone.start()는 반드시 사용자 클릭 안에서 호출해야 한다.
   const onToggle = async () => {
@@ -20,6 +20,11 @@ export default function App() {
     <div className="app">
       <header>
         <h1>Air Chord</h1>
+        <div className="modes">
+          <button className={mode === 'chord' ? 'pill on' : 'pill'} onClick={() => setMode('chord')}>코드 손모양</button>
+          <button className={mode === 'strum' ? 'pill on' : 'pill'} onClick={() => setMode('strum')}>스트럼</button>
+          <button className="pill" disabled title="7단계에서 구현">에어 피아노</button>
+        </div>
         <button onClick={onToggle}>{running ? '정지' : '시작'}</button>
       </header>
       <main>

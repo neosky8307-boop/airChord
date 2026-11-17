@@ -1,5 +1,5 @@
 import * as Tone from 'tone'
-import type { Instrument } from './instrument'
+import type { Instrument, PlayOptions } from './instrument'
 
 export class SynthInstrument implements Instrument {
   private synth = new Tone.PolySynth(Tone.Synth, {
@@ -12,9 +12,21 @@ export class SynthInstrument implements Instrument {
     this.synth.volume.value = -8
   }
 
-  playChord(notes: string[], opts: { velocity?: number; duration?: number } = {}) {
-    const { velocity = 0.8, duration = 1.2 } = opts
-    this.synth.triggerAttackRelease(notes, duration, Tone.now(), velocity)
+  /** 스트럼 시 음과 음 사이 간격 (초) */
+  private static STRUM_GAP = 0.018
+
+  playChord(notes: string[], opts: PlayOptions = {}) {
+    const { velocity = 0.8, duration = 1.2, direction } = opts
+    const now = Tone.now()
+    if (!direction) {
+      this.synth.triggerAttackRelease(notes, duration, now, velocity)
+      return
+    }
+    // notes는 낮은 음 → 높은 음 순. 다운은 낮은 음부터, 업은 높은 음부터.
+    const ordered = direction === 'down' ? notes : [...notes].reverse()
+    ordered.forEach((n, i) =>
+      this.synth.triggerAttackRelease(n, duration, now + i * SynthInstrument.STRUM_GAP, velocity),
+    )
   }
 
   stopAll() {

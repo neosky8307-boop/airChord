@@ -5,6 +5,7 @@ import type { FingerVector } from '../hand/fingers'
 import type { Handedness } from '../hand/types'
 
 export type Status = 'idle' | 'loading' | 'running' | 'error'
+export type Mode = 'chord' | 'strum' | 'piano'
 
 interface AppState {
   status: Status
@@ -12,6 +13,10 @@ interface AppState {
   fps: number
   handCount: number
   mirror: boolean
+  mode: Mode
+  setMode: (mode: Mode) => void
+  /** 스트럼 판정 속도 (손길이/초). 작을수록 살살 쳐도 울린다. */
+  strumThreshold: number
   /** 코드 손모양을 읽는 손 (반대 손은 스트럼/연주용) */
   chordHand: Handedness
   /** 코드 인식 임계값 (유클리드 거리) */
@@ -39,6 +44,9 @@ export const useAppStore = create<AppState>((set) => ({
   fps: 0,
   handCount: 0,
   mirror: true,
+  mode: 'chord',
+  setMode: (mode) => set({ mode }),
+  strumThreshold: 3,
   chordHand: 'Left',
   threshold: 0.8,
   stableFrames: 4,

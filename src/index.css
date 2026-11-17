@@ -30,3 +30,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .calib-tpl em { margin-left: auto; font-style: normal; color: #60a5fa; }
 .calib .hint { margin: 8px 0 0; font-size: 12px; color: #9ca3af; }
 .calib .rec { display: block; margin-top: 8px; font-size: 13px; color: #fbbf24; min-height: 1em; }
+
+.modes { display: flex; gap: 6px; }
+button.pill { background: #262b36; color: #9ca3af; padding: 6px 14px; }
+button.pill.on { background: #3b82f6; color: #fff; }

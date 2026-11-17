@@ -5,6 +5,7 @@ import type { HandFrame } from '../hand/types'
 import { ChordTrigger } from '../audio/trigger'
 import { outputLatencyMs, playChord, stopAudio } from '../audio/engine'
 import { matchChord, Stabilizer } from '../chords/matching'
+import { handScale, StrumDetector } from '../chords/strum'
 import { fingerExtensions, fingerRatios } from '../hand/fingers'
 import { live } from '../hand/live'
 import { useAppStore } from '../store/useAppStore'
@@ -86,6 +87,8 @@ export function CameraView({ running }: { running: boolean }) {
 
       const stabilizer = new Stabilizer(useAppStore.getState().stableFrames)
       const trigger = new ChordTrigger()
+      const strum = new StrumDetector()
+      let lastMode = useAppStore.getState().mode
       let candidateId: string | null = null
       let candidateSince = 0
       let lastVideoTime = -1
@@ -109,6 +112,12 @@ export function CameraView({ running }: { running: boolean }) {
             }
           }
           const st = useAppStore.getState()
+          if (st.mode !== lastMode) {
+            lastMode = st.mode
+            trigger.reset()
+            strum.reset()
+            live.strumSpeed = 0
+          }
           stabilizer.frames = st.stableFrames
           const chordFingers = live.fingers[st.chordHand]
           const rec = live.recorder
@@ -140,10 +149,29 @@ export function CameraView({ running }: { running: boolean }) {
           const { confirmed, changed } = stabilizer.push(id)
           if (changed) {
             st.setConfirmedChord(confirmed)
-            const toPlay = trigger.next(confirmed)
+            // 코드 모드에서만 확정 즉시 재생한다. 스트럼 모드에서는 코드만 고르고 소리는 스트로크가 낸다.
+            const toPlay = st.mode === 'chord' ? trigger.next(confirmed) : null
             if (toPlay) {
               playChord(toPlay)
               live.latencyMs = performance.now() - candidateSince + outputLatencyMs()
+            }
+          }
+          if (st.mode === 'strum' && !live.recorder) {
+            const strumSide = st.chordHand === 'Left' ? 'Right' : 'Left'
+            const hand = frame.hands.find((h) => h.handedness === strumSide)
+            if (hand) {
+              strum.triggerSpeed = st.strumThreshold
+              const wrist = hand.landmarks[0]
+              const ev = strum.push(wrist.y, handScale(hand.landmarks, aspect), frameTime)
+              live.strumSpeed = strum.speed
+              if (ev && confirmed) {
+                playChord(confirmed, { direction: ev.direction, velocity: ev.strength })
+                live.lastStrum = { direction: ev.direction, at: performance.now() }
+                live.latencyMs = performance.now() - frameTime + outputLatencyMs()
+              }
+            } else {
+              strum.reset()
+              live.strumSpeed = 0
             }
           }
           handCount = frame.hands.length
@@ -169,6 +197,7 @@ export function CameraView({ running }: { running: boolean }) {
       live.fingers = {}
       live.match = null
       live.recorder = null
+      live.strumSpeed = 0
       stopAudio()
       useAppStore.getState().setConfirmedChord(null)
       useAppStore.getState().setCalibrating(null)

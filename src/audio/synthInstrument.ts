@@ -29,6 +29,11 @@ export class SynthInstrument implements Instrument {
     )
   }
 
+  playNote(note: string, opts: Pick<PlayOptions, 'velocity' | 'duration'> = {}) {
+    const { velocity = 0.8, duration = 0.7 } = opts
+    this.synth.triggerAttackRelease(note, duration, Tone.now(), velocity)
+  }
+
   stopAll() {
     this.synth.releaseAll()
   }

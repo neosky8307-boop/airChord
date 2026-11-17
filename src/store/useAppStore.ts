@@ -17,6 +17,10 @@ interface AppState {
   setMode: (mode: Mode) => void
   /** 스트럼 판정 속도 (손길이/초). 작을수록 살살 쳐도 울린다. */
   strumThreshold: number
+  /** 에어 피아노: 손끝 하강 속도 임계값 (손길이/초) */
+  pianoPressSpeed: number
+  /** 에어 피아노: 손가락 굽힘 속도 임계값 (펴짐값/초) */
+  pianoBendSpeed: number
   /** 코드 손모양을 읽는 손 (반대 손은 스트럼/연주용) */
   chordHand: Handedness
   /** 코드 인식 임계값 (유클리드 거리) */
@@ -47,6 +51,8 @@ export const useAppStore = create<AppState>((set) => ({
   mode: 'chord',
   setMode: (mode) => set({ mode }),
   strumThreshold: 3,
+  pianoPressSpeed: 2.5,
+  pianoBendSpeed: 2,
   chordHand: 'Left',
   threshold: 0.8,
   stableFrames: 4,

@@ -3,9 +3,11 @@ import { createHandTracker, ModelLoadError, type HandTracker } from '../hand/tra
 import { HAND_CONNECTIONS } from '../hand/connections'
 import type { HandFrame } from '../hand/types'
 import { ChordTrigger } from '../audio/trigger'
-import { outputLatencyMs, playChord, stopAudio } from '../audio/engine'
+import { outputLatencyMs, playChord, playNote, stopAudio } from '../audio/engine'
 import { matchChord, Stabilizer } from '../chords/matching'
 import { handScale, StrumDetector } from '../chords/strum'
+import { DEFAULT_RECT, keyAtPoint, layoutKeys, toDisplayX } from '../piano/keyboard'
+import { AirPianoDetector } from '../piano/press'
 import { fingerExtensions, fingerRatios } from '../hand/fingers'
 import { live } from '../hand/live'
 import { useAppStore } from '../store/useAppStore'
@@ -21,8 +23,36 @@ function cameraErrorMessage(e: unknown): string {
   return `카메라를 시작하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`
 }
 
-function draw(ctx: CanvasRenderingContext2D, frame: HandFrame, w: number, h: number) {
+/** 가상 건반. 컨테이너가 CSS로 좌우 반전되므로, 반전 표시일 때는 캔버스를 미리 한 번 뒤집어 글자가 바로 읽히게 한다. */
+function drawKeyboard(ctx: CanvasRenderingContext2D, w: number, h: number, mirror: boolean) {
+  ctx.save()
+  if (mirror) {
+    ctx.translate(w, 0)
+    ctx.scale(-1, 1)
+  }
+  const now = performance.now()
+  const top = DEFAULT_RECT.top * h
+  const height = (DEFAULT_RECT.bottom - DEFAULT_RECT.top) * h
+  ctx.font = 'bold 16px system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  for (const key of layoutKeys()) {
+    const x = key.x0 * w
+    const kw = (key.x1 - key.x0) * w
+    const pressed = now - (live.pressed[key.note] ?? -1e9) < 250
+    ctx.fillStyle = pressed ? 'rgba(59,130,246,0.75)' : 'rgba(255,255,255,0.28)'
+    ctx.fillRect(x + 1, top, kw - 2, height)
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(x + 1, top, kw - 2, height)
+    ctx.fillStyle = '#fff'
+    ctx.fillText(key.note, x + kw / 2, top + height - 12)
+  }
+  ctx.restore()
+}
+
+function draw(ctx: CanvasRenderingContext2D, frame: HandFrame, w: number, h: number, mirror: boolean, piano: boolean) {
   ctx.clearRect(0, 0, w, h)
+  if (piano) drawKeyboard(ctx, w, h, mirror)
   for (const hand of frame.hands) {
     const color = hand.handedness === 'Left' ? '#4ade80' : '#60a5fa'
     ctx.strokeStyle = color
@@ -88,6 +118,7 @@ export function CameraView({ running }: { running: boolean }) {
       const stabilizer = new Stabilizer(useAppStore.getState().stableFrames)
       const trigger = new ChordTrigger()
       const strum = new StrumDetector()
+      const piano = new AirPianoDetector()
       let lastMode = useAppStore.getState().mode
       let candidateId: string | null = null
       let candidateSince = 0
@@ -102,7 +133,7 @@ export function CameraView({ running }: { running: boolean }) {
           lastVideoTime = video.currentTime
           const frameTime = performance.now()
           const frame = tracker!.detect(video, frameTime)
-          draw(ctx, frame, canvas.width, canvas.height)
+          draw(ctx, frame, canvas.width, canvas.height, useAppStore.getState().mirror, useAppStore.getState().mode === 'piano')
           const aspect = canvas.width / canvas.height
           live.fingers = {}
           for (const hand of frame.hands) {
@@ -116,7 +147,9 @@ export function CameraView({ running }: { running: boolean }) {
             lastMode = st.mode
             trigger.reset()
             strum.reset()
+            piano.reset()
             live.strumSpeed = 0
+            live.pianoStats = { speed: 0, bend: 0 }
           }
           stabilizer.frames = st.stableFrames
           const chordFingers = live.fingers[st.chordHand]
@@ -140,7 +173,7 @@ export function CameraView({ running }: { running: boolean }) {
             }
           }
           live.match =
-            chordFingers && !live.recorder ? matchChord(chordFingers.ext, st.templates, st.threshold) : null
+            chordFingers && !live.recorder && st.mode !== 'piano' ? matchChord(chordFingers.ext, st.templates, st.threshold) : null
           const id = live.match?.id ?? null
           if (id !== candidateId) {
             candidateId = id
@@ -174,6 +207,26 @@ export function CameraView({ running }: { running: boolean }) {
               live.strumSpeed = 0
             }
           }
+          if (st.mode === 'piano' && !live.recorder) {
+            piano.pressSpeed = st.pianoPressSpeed
+            piano.bendSpeed = st.pianoBendSpeed
+            const seen = new Set<string>()
+            const tracked = frame.hands.map((h) => {
+              const id = seen.has(h.handedness) ? `${h.handedness}2` : h.handedness
+              seen.add(h.handedness)
+              return { id, landmarks: h.landmarks, ext: fingerExtensions(h.landmarks, { aspect }) }
+            })
+            for (const ev of piano.update(tracked, aspect, frameTime)) {
+              const key = keyAtPoint(toDisplayX(ev.x, st.mirror), ev.y)
+              if (!key) continue // 건반 영역 밖에서 누른 건 무시
+              playNote(key.note, { velocity: ev.strength })
+              const at = performance.now()
+              live.pressed[key.note] = at
+              live.lastNote = { note: key.note, at }
+              live.latencyMs = at - frameTime + outputLatencyMs()
+            }
+            live.pianoStats = piano.stats
+          }
           handCount = frame.hands.length
           frames++
         }
@@ -198,6 +251,8 @@ export function CameraView({ running }: { running: boolean }) {
       live.match = null
       live.recorder = null
       live.strumSpeed = 0
+      live.pressed = {}
+      live.pianoStats = { speed: 0, bend: 0 }
       stopAudio()
       useAppStore.getState().setConfirmedChord(null)
       useAppStore.getState().setCalibrating(null)

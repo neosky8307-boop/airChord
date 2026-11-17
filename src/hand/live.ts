@@ -18,5 +18,10 @@ export const live: {
   recorder: TemplateRecorder | null
   /** 스트럼 손목 속도(부호 포함, 손길이/초). 튜닝용 표시. */
   strumSpeed: number
+  /** 에어 피아노: 건반별 마지막 누른 시각 (하이라이트용) */
+  pressed: Record<string, number>
+  lastNote: { note: string; at: number } | null
+  /** 에어 피아노: 현재 손가락 최대 하강/굽힘 속도 (튜닝용) */
+  pianoStats: { speed: number; bend: number }
   lastStrum: { direction: StrumDirection; at: number } | null
-} = { fingers: {}, match: null, latencyMs: null, recorder: null, strumSpeed: 0, lastStrum: null }
+} = { fingers: {}, match: null, latencyMs: null, recorder: null, strumSpeed: 0, lastStrum: null, pressed: {}, lastNote: null, pianoStats: { speed: 0, bend: 0 } }

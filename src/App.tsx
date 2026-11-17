@@ -23,7 +23,7 @@ export default function App() {
         <div className="modes">
           <button className={mode === 'chord' ? 'pill on' : 'pill'} onClick={() => setMode('chord')}>코드 손모양</button>
           <button className={mode === 'strum' ? 'pill on' : 'pill'} onClick={() => setMode('strum')}>스트럼</button>
-          <button className="pill" disabled title="7단계에서 구현">에어 피아노</button>
+          <button className={mode === 'piano' ? 'pill on' : 'pill'} onClick={() => setMode('piano')}>에어 피아노</button>
         </div>
         <button onClick={onToggle}>{running ? '정지' : '시작'}</button>
       </header>

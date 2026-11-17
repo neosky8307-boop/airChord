@@ -25,6 +25,10 @@ export function playChord(id: string, opts?: PlayOptions): void {
   if (chord) instrument?.playChord(chord.notes, opts)
 }
 
+export function playNote(note: string, opts?: Pick<PlayOptions, 'velocity' | 'duration'>): void {
+  instrument?.playNote(note, opts)
+}
+
 export function stopAudio(): void {
   instrument?.stopAll()
 }

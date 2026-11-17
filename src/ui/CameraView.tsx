@@ -111,7 +111,27 @@ export function CameraView({ running }: { running: boolean }) {
           const st = useAppStore.getState()
           stabilizer.frames = st.stableFrames
           const chordFingers = live.fingers[st.chordHand]
-          live.match = chordFingers ? matchChord(chordFingers.ext, st.templates, st.threshold) : null
+          const rec = live.recorder
+          if (rec) {
+            if (chordFingers) rec.add(chordFingers.ext, frameTime)
+            if (rec.phase(frameTime) === 'done') {
+              const res = rec.finish()
+              live.recorder = null
+              if (res.ok) {
+                st.setTemplate(res.id, res.template)
+                st.setCalibrating(
+                  null,
+                  res.spread > 0.2
+                    ? `${res.id} 저장됨. 다만 녹화 중 손모양이 많이 흔들렸습니다. 다시 녹화하는 걸 권장합니다.`
+                    : `${res.id} 템플릿을 저장했습니다. (샘플 ${res.samples}개)`,
+                )
+              } else {
+                st.setCalibrating(null, `손이 거의 보이지 않아 저장하지 못했습니다. ${st.chordHand === 'Left' ? '왼손' : '오른손'}이 화면에 보이는지 확인하세요.`)
+              }
+            }
+          }
+          live.match =
+            chordFingers && !live.recorder ? matchChord(chordFingers.ext, st.templates, st.threshold) : null
           const id = live.match?.id ?? null
           if (id !== candidateId) {
             candidateId = id
@@ -148,8 +168,10 @@ export function CameraView({ running }: { running: boolean }) {
       if (videoRef.current) videoRef.current.srcObject = null
       live.fingers = {}
       live.match = null
+      live.recorder = null
       stopAudio()
       useAppStore.getState().setConfirmedChord(null)
+      useAppStore.getState().setCalibrating(null)
       useAppStore.getState().setStatus('idle')
     }
   }, [running])

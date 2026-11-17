@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { startAudio } from './audio/engine'
 import { CameraView } from './ui/CameraView'
 import { FingerBars } from './ui/FingerBars'
+import { CalibrationPanel } from './ui/CalibrationPanel'
 import { ChordList, ChordStatus } from './ui/ChordGuide'
 import { useAppStore } from './store/useAppStore'
 
@@ -28,6 +29,7 @@ export default function App() {
           <FingerBars hand="Left" title="왼손 (펴짐 / 원시 비율)" />
           <FingerBars hand="Right" title="오른손 (펴짐 / 원시 비율)" />
         </div>
+        <CalibrationPanel />
         {status === 'loading' && <p className="msg">카메라와 모델을 준비하는 중…</p>}
         {status === 'error' && <p className="msg error">{error}</p>}
       </main>

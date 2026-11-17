@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { DEFAULT_TEMPLATES, type Templates } from '../chords/definitions'
+import { browserStorage, loadTemplates, saveTemplates } from '../chords/storage'
+import type { FingerVector } from '../hand/fingers'
 import type { Handedness } from '../hand/types'
 
 export type Status = 'idle' | 'loading' | 'running' | 'error'
@@ -20,6 +22,12 @@ interface AppState {
   /** 안정화를 거쳐 확정된 코드 (없으면 null) */
   confirmedChord: string | null
   setConfirmedChord: (id: string | null) => void
+  /** 녹화 중인 코드 id (없으면 null) */
+  calibrating: string | null
+  calibrationMessage: string | null
+  setCalibrating: (id: string | null, message?: string | null) => void
+  setTemplate: (id: string, template: FingerVector) => void
+  resetTemplate: (id: string) => void
   setStatus: (status: Status, error?: string | null) => void
   setStats: (fps: number, handCount: number) => void
   setMirror: (mirror: boolean) => void
@@ -34,9 +42,24 @@ export const useAppStore = create<AppState>((set) => ({
   chordHand: 'Left',
   threshold: 0.8,
   stableFrames: 4,
-  templates: DEFAULT_TEMPLATES,
+  templates: loadTemplates(browserStorage()),
   confirmedChord: null,
   setConfirmedChord: (confirmedChord) => set({ confirmedChord }),
+  calibrating: null,
+  calibrationMessage: null,
+  setCalibrating: (calibrating, message = null) => set({ calibrating, calibrationMessage: message }),
+  setTemplate: (id, template) =>
+    set((s) => {
+      const templates = { ...s.templates, [id]: template }
+      saveTemplates(browserStorage(), templates)
+      return { templates }
+    }),
+  resetTemplate: (id) =>
+    set((s) => {
+      const templates = { ...s.templates, [id]: DEFAULT_TEMPLATES[id] }
+      saveTemplates(browserStorage(), templates)
+      return { templates }
+    }),
   setStatus: (status, error = null) => set({ status, error }),
   setStats: (fps, handCount) => set({ fps, handCount }),
   setMirror: (mirror) => set({ mirror }),

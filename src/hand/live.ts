@@ -1,4 +1,5 @@
 import type { FingerVector } from './fingers'
+import type { TemplateRecorder } from '../chords/calibration'
 import type { Match } from '../chords/matching'
 import type { Handedness } from './types'
 
@@ -12,4 +13,6 @@ export const live: {
   match: Match | null
   /** 마지막 코드 재생까지의 지연 (손모양 시작 프레임 → 소리 출력, ms) */
   latencyMs: number | null
-} = { fingers: {}, match: null, latencyMs: null }
+  /** 진행 중인 캘리브레이션 녹화 */
+  recorder: TemplateRecorder | null
+} = { fingers: {}, match: null, latencyMs: null, recorder: null }

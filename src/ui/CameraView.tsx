@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { createHandTracker, ModelLoadError, type HandTracker } from '../hand/tracker'
 import { HAND_CONNECTIONS } from '../hand/connections'
 import type { HandFrame } from '../hand/types'
+import { matchChord, Stabilizer } from '../chords/matching'
 import { fingerExtensions, fingerRatios } from '../hand/fingers'
 import { live } from '../hand/live'
 import { useAppStore } from '../store/useAppStore'
@@ -81,6 +82,7 @@ export function CameraView({ running }: { running: boolean }) {
       canvas.height = video.videoHeight
       setStatus('running')
 
+      const stabilizer = new Stabilizer(useAppStore.getState().stableFrames)
       let lastVideoTime = -1
       let frames = 0
       let windowStart = performance.now()
@@ -100,6 +102,12 @@ export function CameraView({ running }: { running: boolean }) {
               ratios: fingerRatios(hand.landmarks, aspect),
             }
           }
+          const st = useAppStore.getState()
+          stabilizer.frames = st.stableFrames
+          const chordFingers = live.fingers[st.chordHand]
+          live.match = chordFingers ? matchChord(chordFingers.ext, st.templates, st.threshold) : null
+          const { confirmed, changed } = stabilizer.push(live.match?.id ?? null)
+          if (changed) st.setConfirmedChord(confirmed)
           handCount = frame.hands.length
           frames++
         }
@@ -121,6 +129,8 @@ export function CameraView({ running }: { running: boolean }) {
       stream?.getTracks().forEach((t) => t.stop())
       if (videoRef.current) videoRef.current.srcObject = null
       live.fingers = {}
+      live.match = null
+      useAppStore.getState().setConfirmedChord(null)
       useAppStore.getState().setStatus('idle')
     }
   }, [running])

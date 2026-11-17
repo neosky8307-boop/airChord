@@ -17,3 +17,6 @@ footer span { font-variant-numeric: tabular-nums; font-size: 13px; color: #9ca3a
 .bars .track { height: 8px; background: #262b36; border-radius: 4px; overflow: hidden; }
 .bars .fill { display: block; height: 100%; width: 0; background: #3b82f6; }
 .bars .num { font-variant-numeric: tabular-nums; color: #9ca3af; text-align: right; }
+.chords { display: flex; gap: 8px; }
+.chip { padding: 8px 16px; border-radius: 8px; background: #262b36; color: #9ca3af; font-weight: 600; }
+.chip.on { background: #3b82f6; color: #fff; }

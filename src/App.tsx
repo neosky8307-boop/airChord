@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CameraView } from './ui/CameraView'
 import { FingerBars } from './ui/FingerBars'
+import { ChordList, ChordStatus } from './ui/ChordGuide'
 import { useAppStore } from './store/useAppStore'
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
         <button onClick={() => setRunning((r) => !r)}>{running ? '정지' : '시작'}</button>
       </header>
       <main>
+        <ChordList />
         <CameraView running={running} />
         <div className="bars-wrap">
           <FingerBars hand="Left" title="왼손 (펴짐 / 원시 비율)" />
@@ -25,6 +27,7 @@ export default function App() {
       <footer>
         <span>상태: {status}</span>
         <span>FPS: {fps}</span>
+        <ChordStatus />
         <span>감지된 손: {handCount}</span>
       </footer>
     </div>

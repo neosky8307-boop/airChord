@@ -1,4 +1,5 @@
 import type { FingerVector } from './fingers'
+import type { Match } from '../chords/matching'
 import type { Handedness } from './types'
 
 /**
@@ -7,4 +8,6 @@ import type { Handedness } from './types'
  */
 export const live: {
   fingers: Partial<Record<Handedness, { ext: FingerVector; ratios: FingerVector }>>
-} = { fingers: {} }
+  /** 이번 프레임의 순간 매칭 결과 (안정화 이전) */
+  match: Match | null
+} = { fingers: {}, match: null }

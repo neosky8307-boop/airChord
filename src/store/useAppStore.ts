@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { DEFAULT_TEMPLATES, type Templates } from '../chords/definitions'
+import type { Handedness } from '../hand/types'
 
 export type Status = 'idle' | 'loading' | 'running' | 'error'
 
@@ -8,6 +10,16 @@ interface AppState {
   fps: number
   handCount: number
   mirror: boolean
+  /** 코드 손모양을 읽는 손 (반대 손은 스트럼/연주용) */
+  chordHand: Handedness
+  /** 코드 인식 임계값 (유클리드 거리) */
+  threshold: number
+  /** 확정에 필요한 연속 프레임 수 */
+  stableFrames: number
+  templates: Templates
+  /** 안정화를 거쳐 확정된 코드 (없으면 null) */
+  confirmedChord: string | null
+  setConfirmedChord: (id: string | null) => void
   setStatus: (status: Status, error?: string | null) => void
   setStats: (fps: number, handCount: number) => void
   setMirror: (mirror: boolean) => void
@@ -19,6 +31,12 @@ export const useAppStore = create<AppState>((set) => ({
   fps: 0,
   handCount: 0,
   mirror: true,
+  chordHand: 'Left',
+  threshold: 0.8,
+  stableFrames: 4,
+  templates: DEFAULT_TEMPLATES,
+  confirmedChord: null,
+  setConfirmedChord: (confirmedChord) => set({ confirmedChord }),
   setStatus: (status, error = null) => set({ status, error }),
   setStats: (fps, handCount) => set({ fps, handCount }),
   setMirror: (mirror) => set({ mirror }),

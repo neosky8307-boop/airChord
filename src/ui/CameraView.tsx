@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import { createHandTracker, ModelLoadError, type HandTracker } from '../hand/tracker'
 import { HAND_CONNECTIONS } from '../hand/connections'
 import type { HandFrame } from '../hand/types'
+import { fingerExtensions, fingerRatios } from '../hand/fingers'
+import { live } from '../hand/live'
 import { useAppStore } from '../store/useAppStore'
 
 function cameraErrorMessage(e: unknown): string {
@@ -90,6 +92,14 @@ export function CameraView({ running }: { running: boolean }) {
           lastVideoTime = video.currentTime
           const frame = tracker!.detect(video, performance.now())
           draw(ctx, frame, canvas.width, canvas.height)
+          const aspect = canvas.width / canvas.height
+          live.fingers = {}
+          for (const hand of frame.hands) {
+            live.fingers[hand.handedness] = {
+              ext: fingerExtensions(hand.landmarks, { aspect }),
+              ratios: fingerRatios(hand.landmarks, aspect),
+            }
+          }
           handCount = frame.hands.length
           frames++
         }
@@ -110,6 +120,7 @@ export function CameraView({ running }: { running: boolean }) {
       tracker?.close()
       stream?.getTracks().forEach((t) => t.stop())
       if (videoRef.current) videoRef.current.srcObject = null
+      live.fingers = {}
       useAppStore.getState().setStatus('idle')
     }
   }, [running])

@@ -2,31 +2,39 @@ import { create } from 'zustand'
 import { DEFAULT_TEMPLATES, type Templates } from '../chords/definitions'
 import { browserStorage, loadTemplates, saveTemplates } from '../chords/storage'
 import type { FingerVector } from '../hand/fingers'
-import type { Handedness } from '../hand/types'
+import {
+  clampNumeric,
+  DEFAULT_SETTINGS,
+  loadSettings,
+  NUMERIC_RANGES,
+  saveSettings,
+  type NumericSettingKey,
+  type Settings,
+} from '../settings/settings'
 
 export type Status = 'idle' | 'loading' | 'running' | 'error'
 export type Mode = 'chord' | 'strum' | 'piano'
 
-interface AppState {
+const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]
+
+/** 상태에서 저장 대상 설정만 뽑는다. */
+function pickSettings(s: Settings): Settings {
+  const out = {} as Record<string, unknown>
+  for (const k of SETTING_KEYS) out[k] = s[k]
+  return out as unknown as Settings
+}
+
+/** Settings(mirror, chordHand, threshold, stableFrames, 감도들, cameraId)는 상태에 평평하게 들어 있다. */
+interface AppState extends Settings {
   status: Status
   error: string | null
   fps: number
   handCount: number
-  mirror: boolean
   mode: Mode
   setMode: (mode: Mode) => void
-  /** 스트럼 판정 속도 (손길이/초). 작을수록 살살 쳐도 울린다. */
-  strumThreshold: number
-  /** 에어 피아노: 손끝 하강 속도 임계값 (손길이/초) */
-  pianoPressSpeed: number
-  /** 에어 피아노: 손가락 굽힘 속도 임계값 (펴짐값/초) */
-  pianoBendSpeed: number
-  /** 코드 손모양을 읽는 손 (반대 손은 스트럼/연주용) */
-  chordHand: Handedness
-  /** 코드 인식 임계값 (유클리드 거리) */
-  threshold: number
-  /** 확정에 필요한 연속 프레임 수 */
-  stableFrames: number
+  /** 설정 하나를 바꾸고 저장한다. 숫자는 허용 범위로 보정된다. */
+  setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void
+  resetSettings: () => void
   templates: Templates
   /** 안정화를 거쳐 확정된 코드 (없으면 null) */
   confirmedChord: string | null
@@ -39,23 +47,29 @@ interface AppState {
   resetTemplate: (id: string) => void
   setStatus: (status: Status, error?: string | null) => void
   setStats: (fps: number, handCount: number) => void
-  setMirror: (mirror: boolean) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
+  ...loadSettings(browserStorage()),
   status: 'idle',
   error: null,
   fps: 0,
   handCount: 0,
-  mirror: true,
   mode: 'chord',
   setMode: (mode) => set({ mode }),
-  strumThreshold: 3,
-  pianoPressSpeed: 2.5,
-  pianoBendSpeed: 2,
-  chordHand: 'Left',
-  threshold: 0.8,
-  stableFrames: 4,
+  setSetting: (key, value) =>
+    set((s) => {
+      const v = key in NUMERIC_RANGES ? clampNumeric(key as NumericSettingKey, value as number) : value
+      const next = { ...pickSettings(s), [key]: v } as Settings
+      saveSettings(browserStorage(), next)
+      return { [key]: v } as Partial<AppState>
+    }),
+  resetSettings: () =>
+    set(() => {
+      const defaults = { ...DEFAULT_SETTINGS }
+      saveSettings(browserStorage(), defaults)
+      return defaults
+    }),
   templates: loadTemplates(browserStorage()),
   confirmedChord: null,
   setConfirmedChord: (confirmedChord) => set({ confirmedChord }),
@@ -76,5 +90,4 @@ export const useAppStore = create<AppState>((set) => ({
     }),
   setStatus: (status, error = null) => set({ status, error }),
   setStats: (fps, handCount) => set({ fps, handCount }),
-  setMirror: (mirror) => set({ mirror }),
 }))

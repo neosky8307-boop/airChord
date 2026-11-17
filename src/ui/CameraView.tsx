@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { openCamera } from '../hand/camera'
 import { createHandTracker, ModelLoadError, type HandTracker } from '../hand/tracker'
 import { HAND_CONNECTIONS } from '../hand/connections'
 import type { HandFrame } from '../hand/types'
@@ -79,6 +80,7 @@ export function CameraView({ running }: { running: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mirror = useAppStore((s) => s.mirror)
+  const cameraId = useAppStore((s) => s.cameraId)
 
   useEffect(() => {
     if (!running) return
@@ -91,10 +93,10 @@ export function CameraView({ running }: { running: boolean }) {
     ;(async () => {
       setStatus('loading')
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480, frameRate: { ideal: 60 } },
-          audio: false,
-        })
+        const opened = await openCamera(cameraId)
+        stream = opened.stream
+        // 저장된 카메라가 사라졌으면 기본 카메라로 열렸다. 설정도 기본으로 되돌린다.
+        if (opened.fellBack) useAppStore.getState().setSetting('cameraId', null)
       } catch (e) {
         return setStatus('error', cameraErrorMessage(e))
       }
@@ -258,7 +260,7 @@ export function CameraView({ running }: { running: boolean }) {
       useAppStore.getState().setCalibrating(null)
       useAppStore.getState().setStatus('idle')
     }
-  }, [running])
+  }, [running, cameraId])
 
   return (
     <div className="camera" style={{ transform: mirror ? 'scaleX(-1)' : undefined }}>

@@ -34,3 +34,13 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .modes { display: flex; gap: 6px; }
 button.pill { background: #262b36; color: #9ca3af; padding: 6px 14px; }
 button.pill.on { background: #3b82f6; color: #fff; }
+
+.settings { width: min(100%, 640px); background: #171a21; border-radius: 8px; padding: 10px 16px; }
+.settings summary { cursor: pointer; font-size: 13px; color: #9ca3af; }
+.set-row { display: grid; grid-template-columns: 170px 1fr 48px; align-items: center; gap: 4px 10px; margin: 10px 0; font-size: 13px; }
+.set-row label { color: #e5e7eb; }
+.set-row select { grid-column: 2 / 4; background: #262b36; color: #e5e7eb; border: 0; padding: 7px 10px; border-radius: 6px; }
+.set-row input[type=range] { width: 100%; }
+.set-row output { text-align: right; font-variant-numeric: tabular-nums; color: #9ca3af; }
+.set-row small { grid-column: 2 / 4; color: #6b7280; font-size: 11px; }
+.settings button { margin-top: 4px; }

@@ -40,7 +40,11 @@ export class Stabilizer {
   private count = 0
   private confirmed: string | null = null
 
-  constructor(public frames: number) {}
+  frames: number
+
+  constructor(frames: number) {
+    this.frames = frames
+  }
 
   /** 프레임마다 호출. 확정값이 바뀐 프레임에서만 changed가 true. */
   push(id: string | null): { confirmed: string | null; changed: boolean } {

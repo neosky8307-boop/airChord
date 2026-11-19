@@ -1,3 +1,5 @@
+import type { ToneId } from './presets'
+
 export interface PlayOptions {
   velocity?: number
   duration?: number
@@ -9,6 +11,8 @@ export interface PlayOptions {
 export interface Instrument {
   playChord(notes: string[], opts?: PlayOptions): void
   playNote(note: string, opts?: Pick<PlayOptions, 'velocity' | 'duration'>): void
+  /** 음색을 바꾼다. 지원하지 않는 악기(샘플러 등)는 구현하지 않아도 된다. */
+  setTone?(id: ToneId): void
   stopAll(): void
   dispose(): void
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { startAudio } from './audio/engine'
+import { useEffect, useState } from 'react'
+import { setTone, startAudio } from './audio/engine'
 import { CameraView } from './ui/CameraView'
 import { FingerBars } from './ui/FingerBars'
 import { SettingsPanel } from './ui/SettingsPanel'
@@ -9,7 +9,12 @@ import { useAppStore } from './store/useAppStore'
 
 export default function App() {
   const [running, setRunning] = useState(false)
-  const { status, error, fps, handCount, mode, setMode } = useAppStore()
+  const { status, error, fps, handCount, mode, setMode, tone } = useAppStore()
+
+  // 음색 설정이 바뀌면(또는 처음 로드되면) 오디오 엔진에 반영한다.
+  useEffect(() => {
+    setTone(tone)
+  }, [tone])
 
   // Tone.start()는 반드시 사용자 클릭 안에서 호출해야 한다.
   const onToggle = async () => {

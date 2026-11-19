@@ -1,3 +1,4 @@
+import { DEFAULT_TONE, isToneId, type ToneId } from '../audio/presets'
 import type { Handedness } from '../hand/types'
 
 export const SETTINGS_KEY = 'airchord.settings.v1'
@@ -17,6 +18,10 @@ export interface Settings {
   pianoPressSpeed: number
   /** 에어 피아노: 손가락 굽힘 속도 (펴짐값/초) */
   pianoBendSpeed: number
+  /** 음색 프리셋 */
+  tone: ToneId
+  /** 코드를 붙잡고 있는 시간 (초). 이후 음색의 release만큼 여운이 더 이어진다. */
+  chordDuration: number
   /** 선택한 카메라 deviceId (null이면 기본 카메라) */
   cameraId: string | null
 }
@@ -29,6 +34,8 @@ export const DEFAULT_SETTINGS: Settings = {
   strumThreshold: 3,
   pianoPressSpeed: 2.5,
   pianoBendSpeed: 2,
+  tone: DEFAULT_TONE,
+  chordDuration: 3,
   cameraId: null,
 }
 
@@ -38,6 +45,7 @@ export type NumericSettingKey =
   | 'strumThreshold'
   | 'pianoPressSpeed'
   | 'pianoBendSpeed'
+  | 'chordDuration'
 
 export interface NumericRange {
   label: string
@@ -53,6 +61,7 @@ export const NUMERIC_RANGES: Record<NumericSettingKey, NumericRange> = {
   stableFrames: { label: '확정 연속 프레임', hint: '클수록 안정적이지만 반응이 느림', min: 1, max: 10, step: 1 },
   strumThreshold: { label: '스트럼 감도 (속도)', hint: '작을수록 살살 쳐도 울림', min: 1, max: 10, step: 0.5 },
   pianoPressSpeed: { label: '피아노 누름 속도', hint: '작을수록 살짝만 내려도 울림', min: 1, max: 8, step: 0.5 },
+  chordDuration: { label: '코드 길이 (초)', hint: '코드를 붙잡고 있는 시간. 이후 여운이 더 이어집니다', min: 0.5, max: 8, step: 0.25 },
   pianoBendSpeed: { label: '피아노 굽힘 속도', hint: '작을수록 덜 접어도 울림', min: 0.5, max: 6, step: 0.5 },
 }
 
@@ -71,6 +80,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   const r = raw as Record<string, unknown>
   if (typeof r.mirror === 'boolean') out.mirror = r.mirror
   if (r.chordHand === 'Left' || r.chordHand === 'Right') out.chordHand = r.chordHand
+  if (isToneId(r.tone)) out.tone = r.tone
   if (typeof r.cameraId === 'string' && r.cameraId.length > 0) out.cameraId = r.cameraId
   for (const key of Object.keys(NUMERIC_RANGES) as NumericSettingKey[]) {
     const v = r[key]

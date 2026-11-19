@@ -52,6 +52,16 @@ describe('sanitizeSettings', () => {
     expect(s.cameraId).toBeNull()
     expect(s.stableFrames).toBe(6)
   })
+  it('음색은 알려진 프리셋만 받고 아니면 기본값', () => {
+    expect(sanitizeSettings({ tone: 'pad' }).tone).toBe('pad')
+    expect(sanitizeSettings({ tone: 'laser' }).tone).toBe(DEFAULT_SETTINGS.tone)
+    expect(sanitizeSettings({ tone: 5 }).tone).toBe(DEFAULT_SETTINGS.tone)
+  })
+  it('코드 길이는 허용 범위로 보정한다 (0.5~8초)', () => {
+    expect(sanitizeSettings({ chordDuration: 0 }).chordDuration).toBe(0.5)
+    expect(sanitizeSettings({ chordDuration: 100 }).chordDuration).toBe(8)
+    expect(sanitizeSettings({ chordDuration: 2.6 }).chordDuration).toBe(2.5)
+  })
   it('범위를 벗어난 숫자는 보정한다', () => {
     expect(sanitizeSettings({ stableFrames: 100 }).stableFrames).toBe(10)
   })

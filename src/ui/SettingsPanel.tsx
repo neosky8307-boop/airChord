@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { playChord, startAudio } from '../audio/engine'
+import { TONE_IDS, TONE_PRESETS, type ToneId } from '../audio/presets'
 import { listCameras, type CameraInfo } from '../hand/camera'
 import { NUMERIC_RANGES, type NumericSettingKey } from '../settings/settings'
 import { useAppStore } from '../store/useAppStore'
@@ -19,16 +21,52 @@ function useCameras(refreshKey: unknown): CameraInfo[] {
   return cameras
 }
 
-const NUMERIC_KEYS = Object.keys(NUMERIC_RANGES) as NumericSettingKey[]
+// 코드 길이는 소리 섹션에서 따로 그린다.
+const NUMERIC_KEYS = (Object.keys(NUMERIC_RANGES) as NumericSettingKey[]).filter((k) => k !== 'chordDuration')
 
 export function SettingsPanel() {
   const s = useAppStore()
   const cameras = useCameras(s.status)
+  // 카메라 없이도 음색과 길이를 확인할 수 있다. 클릭 안에서 오디오를 시작해야 소리가 난다.
+  const preview = async () => {
+    await startAudio()
+    playChord('C', { duration: s.chordDuration })
+  }
   const selected = cameras.some((c) => c.id === s.cameraId) ? (s.cameraId as string) : ''
 
   return (
     <details className="settings">
       <summary>설정</summary>
+
+      <div className="set-row">
+        <label htmlFor="tone">음색</label>
+        <select id="tone" value={s.tone} onChange={(e) => s.setSetting('tone', e.target.value as ToneId)}>
+          {TONE_IDS.map((id) => (
+            <option key={id} value={id}>{TONE_PRESETS[id].label}</option>
+          ))}
+        </select>
+        <small>{TONE_PRESETS[s.tone].hint}</small>
+      </div>
+
+      <div className="set-row">
+        <label htmlFor="chordDuration">{NUMERIC_RANGES.chordDuration.label}</label>
+        <input
+          id="chordDuration"
+          type="range"
+          min={NUMERIC_RANGES.chordDuration.min}
+          max={NUMERIC_RANGES.chordDuration.max}
+          step={NUMERIC_RANGES.chordDuration.step}
+          value={s.chordDuration}
+          onChange={(e) => s.setSetting('chordDuration', Number(e.target.value))}
+        />
+        <output>{s.chordDuration}</output>
+        <small>{NUMERIC_RANGES.chordDuration.hint}</small>
+      </div>
+
+      <div className="set-row">
+        <span />
+        <button className="secondary" onClick={preview}>소리 들어보기 (C 코드)</button>
+      </div>
 
       <div className="set-row">
         <label htmlFor="cam">카메라</label>

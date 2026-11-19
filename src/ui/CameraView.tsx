@@ -187,7 +187,7 @@ export function CameraView({ running }: { running: boolean }) {
             // 코드 모드에서만 확정 즉시 재생한다. 스트럼 모드에서는 코드만 고르고 소리는 스트로크가 낸다.
             const toPlay = st.mode === 'chord' ? trigger.next(confirmed) : null
             if (toPlay) {
-              playChord(toPlay)
+              playChord(toPlay, { duration: st.chordDuration })
               live.latencyMs = performance.now() - candidateSince + outputLatencyMs()
             }
           }
@@ -200,7 +200,7 @@ export function CameraView({ running }: { running: boolean }) {
               const ev = strum.push(wrist.y, handScale(hand.landmarks, aspect), frameTime)
               live.strumSpeed = strum.speed
               if (ev && confirmed) {
-                playChord(confirmed, { direction: ev.direction, velocity: ev.strength })
+                playChord(confirmed, { direction: ev.direction, velocity: ev.strength, duration: st.chordDuration })
                 live.lastStrum = { direction: ev.direction, at: performance.now() }
                 live.latencyMs = performance.now() - frameTime + outputLatencyMs()
               }

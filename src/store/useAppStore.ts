@@ -36,6 +36,9 @@ interface AppState extends Settings {
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void
   resetSettings: () => void
   templates: Templates
+  /** 캘리브레이션 대상으로 선택된 코드 (가이드 카드/캘리브레이션 패널이 공유) */
+  selectedChord: string
+  setSelectedChord: (id: string) => void
   /** 안정화를 거쳐 확정된 코드 (없으면 null) */
   confirmedChord: string | null
   setConfirmedChord: (id: string | null) => void
@@ -71,6 +74,8 @@ export const useAppStore = create<AppState>((set) => ({
       return defaults
     }),
   templates: loadTemplates(browserStorage()),
+  selectedChord: 'C',
+  setSelectedChord: (selectedChord) => set({ selectedChord }),
   confirmedChord: null,
   setConfirmedChord: (confirmedChord) => set({ confirmedChord }),
   calibrating: null,

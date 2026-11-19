@@ -17,9 +17,6 @@ footer span { font-variant-numeric: tabular-nums; font-size: 13px; color: #9ca3a
 .bars .track { height: 8px; background: #262b36; border-radius: 4px; overflow: hidden; }
 .bars .fill { display: block; height: 100%; width: 0; background: #3b82f6; }
 .bars .num { font-variant-numeric: tabular-nums; color: #9ca3af; text-align: right; }
-.chords { display: flex; gap: 8px; }
-.chip { padding: 8px 16px; border-radius: 8px; background: #262b36; color: #9ca3af; font-weight: 600; }
-.chip.on { background: #3b82f6; color: #fff; }
 button.secondary { background: #374151; }
 button:disabled { opacity: .45; cursor: not-allowed; }
 .calib { width: min(100%, 640px); background: #171a21; border-radius: 8px; padding: 12px 16px; }
@@ -44,3 +41,27 @@ button.pill.on { background: #3b82f6; color: #fff; }
 .set-row output { text-align: right; font-variant-numeric: tabular-nums; color: #9ca3af; }
 .set-row small { grid-column: 2 / 4; color: #6b7280; font-size: 11px; }
 .settings button { margin-top: 4px; }
+
+.body { flex: 1; display: flex; min-height: 0; }
+.body main { flex: 1; min-width: 0; }
+.guide { width: 250px; flex-shrink: 0; background: #171a21; padding: 14px; border-right: 1px solid #262b36; overflow-y: auto; }
+.guide h2 { margin: 0 0 6px; font-size: 14px; }
+.guide .tip { margin: 0 0 12px; font-size: 12px; line-height: 1.5; color: #9ca3af; }
+.cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px 10px; background: #1f2430; border: 2px solid transparent; border-radius: 10px; color: #e5e7eb; cursor: pointer; transition: background .08s, border-color .08s, transform .08s; }
+.card:hover { background: #262b38; }
+.card.sel { border-color: #4b5563; border-style: dashed; }
+.card.on { background: #1d3a6e; border-color: #3b82f6; border-style: solid; transform: scale(1.03); }
+.card .name { font-size: 16px; font-weight: 700; }
+.card .notes { font-size: 11px; color: #9ca3af; }
+.card .badge { position: absolute; top: 4px; right: 4px; font-size: 9px; color: #93c5fd; background: rgba(59,130,246,.18); padding: 1px 5px; border-radius: 6px; }
+.hand { width: 100%; max-width: 84px; height: auto; }
+.hand .palm { fill: #2c3342; }
+.hand .finger.up { fill: #60a5fa; }
+.hand .finger.down { fill: #4b5568; }
+.card.on .hand .finger.up { fill: #bfdbfe; }
+@media (max-width: 900px) {
+  .body { flex-direction: column; }
+  .guide { width: auto; border-right: 0; border-bottom: 1px solid #262b36; }
+  .cards { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { TemplateRecorder } from '../chords/calibration'
 import { CHORDS, DEFAULT_TEMPLATES } from '../chords/definitions'
 import { FINGER_NAMES } from '../hand/fingers'
@@ -8,7 +8,8 @@ import { useAppStore } from '../store/useAppStore'
 const FINGER_LABEL = ['엄지', '검지', '중지', '약지', '새끼']
 
 export function CalibrationPanel() {
-  const [chordId, setChordId] = useState(CHORDS[0].id)
+  const chordId = useAppStore((s) => s.selectedChord)
+  const setChordId = useAppStore((s) => s.setSelectedChord)
   const status = useAppStore((s) => s.status)
   const calibrating = useAppStore((s) => s.calibrating)
   const message = useAppStore((s) => s.calibrationMessage)

@@ -1,63 +1,62 @@
-import { useEffect, useRef } from 'react'
-import { CHORDS } from '../chords/definitions'
-import { live } from '../hand/live'
+import { CHORDS, DEFAULT_TEMPLATES } from '../chords/definitions'
+import { noteNames, thumbOnRight } from '../chords/handGuide'
 import { useAppStore } from '../store/useAppStore'
+import { HandGuide } from './HandGuide'
 
-/** 코드 목록. 확정된 코드만 하이라이트 (확정은 드물게 바뀌므로 state 사용). */
-export function ChordList() {
-  const confirmed = useAppStore((s) => s.confirmedChord)
-  return (
-    <div className="chords">
-      {CHORDS.map((c) => (
-        <span key={c.id} className={c.id === confirmed ? 'chip on' : 'chip'}>
-          {c.label}
-        </span>
-      ))}
-    </div>
-  )
+const TIP: Record<'chord' | 'strum', string> = {
+  chord: '아래 손모양을 만들면 코드가 연주됩니다.',
+  strum: '아래 손모양으로 코드를 고르고, 반대 손을 위아래로 쓸어 연주하세요.',
 }
 
-/** 순간 인식값(안정화 전)과 확정 코드. 순간값은 DOM 직접 갱신. */
-export function ChordStatus() {
-  const confirmed = useAppStore((s) => s.confirmedChord)
-  const instant = useRef<HTMLSpanElement>(null)
-  const latency = useRef<HTMLSpanElement>(null)
-  const strumEl = useRef<HTMLSpanElement>(null)
-  const pianoEl = useRef<HTMLSpanElement>(null)
+/** 좌측 패널: 코드 목록과 코드별 손가락 모양. 현재 확정된 코드는 하이라이트된다. */
+export function ChordGuide() {
   const mode = useAppStore((s) => s.mode)
+  const confirmed = useAppStore((s) => s.confirmedChord)
+  const selected = useAppStore((s) => s.selectedChord)
+  const setSelected = useAppStore((s) => s.setSelectedChord)
+  const templates = useAppStore((s) => s.templates)
+  const chordHand = useAppStore((s) => s.chordHand)
+  const mirror = useAppStore((s) => s.mirror)
+  const handLabel = chordHand === 'Left' ? '왼손' : '오른손'
 
-  useEffect(() => {
-    let raf = 0
-    const tick = () => {
-      const m = live.match
-      if (instant.current)
-        instant.current.textContent = m ? `${m.id} (신뢰도 ${(m.confidence * 100).toFixed(0)}%)` : '-'
-      if (strumEl.current) {
-        const ls = live.lastStrum
-        const flash = ls && performance.now() - ls.at < 350 ? (ls.direction === 'down' ? '↓' : '↑') : '·'
-        strumEl.current.textContent = `${flash} (속도 ${live.strumSpeed.toFixed(1)})`
-      }
-      if (pianoEl.current) {
-        const ln = live.lastNote
-        const flash = ln && performance.now() - ln.at < 600 ? ln.note : '·'
-        const { speed, bend } = live.pianoStats
-        pianoEl.current.textContent = `${flash} (하강 ${speed.toFixed(1)}, 굽힘 ${bend.toFixed(1)})`
-      }
-      if (latency.current)
-        latency.current.textContent = live.latencyMs == null ? '-' : `${live.latencyMs.toFixed(0)}ms`
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [])
+  if (mode === 'piano') {
+    return (
+      <aside className="guide">
+        <h2>에어 피아노</h2>
+        <p className="tip">
+          화면 아래 건반 위에서 손가락을 굽혀 내리면 그 건반이 울립니다. 양손 모두 사용할 수 있어요.
+          코드 가이드는 코드 손모양/스트럼 모드에서 볼 수 있습니다.
+        </p>
+      </aside>
+    )
+  }
 
+  const right = thumbOnRight(chordHand, mirror)
   return (
-    <>
-      <span>확정 코드: <b>{confirmed ?? '-'}</b></span>
-      <span>순간 인식: <span ref={instant}>-</span></span>
-      <span>지연: <span ref={latency}>-</span></span>
-      {mode === 'piano' && <span>피아노: <span ref={pianoEl}>-</span></span>}
-      {mode === 'strum' && <span>스트럼: <span ref={strumEl}>-</span></span>}
-    </>
+    <aside className="guide">
+      <h2>코드 가이드 ({handLabel})</h2>
+      <p className="tip">{TIP[mode]}</p>
+      <div className="cards">
+        {CHORDS.map((c) => {
+          const template = templates[c.id]
+          const custom = template.some((v, i) => v !== DEFAULT_TEMPLATES[c.id][i])
+          const cls = ['card', c.id === confirmed ? 'on' : '', c.id === selected ? 'sel' : ''].join(' ').trim()
+          return (
+            <button
+              key={c.id}
+              className={cls}
+              onClick={() => setSelected(c.id)}
+              aria-pressed={c.id === confirmed}
+              title="클릭하면 캘리브레이션 대상으로 선택됩니다"
+            >
+              <HandGuide template={template} thumbRight={right} title={`${c.label} 손모양`} />
+              <span className="name">{c.label}</span>
+              <span className="notes">{noteNames(c.notes)}</span>
+              {custom && <span className="badge">내 손모양</span>}
+            </button>
+          )
+        })}
+      </div>
+    </aside>
   )
 }
